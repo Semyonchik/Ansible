@@ -1,0 +1,73 @@
+---
+- name: Install Docker centos
+  hosts: centos
+
+  tasks:
+    - name: Install yum utils
+      yum:
+        name: yum-utils
+        state: latest
+
+    - name: Add Docker repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker
+      package:
+        name: docker-ce
+        state: latest
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Install Docker ubuntu
+  hosts: ubuntu
+
+  tasks:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }} >
+
+    - name: Install Docker CE
+      apt:
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io']
+        update_cache: yes
+
+- name: Install posgresql
+  hosts: database
+  become: yes
+
+  pre_tasks:
+    - name: Install packages
+      dnf: "name={{ item }} state=present"
+      with_items:
+        - postgresql-{{ version }}
+        - postgresql-server-{{ version }}
+
+
+    - name: Install Python packages
+      pip: "name={{ item }}  state=present"
+      with_items:
+        - psycopg2-binary
+
+  tasks:
+    - name: Initialize PostgreSQL
+      shell: "postgresql-setup initdb --pgdata={{ data_dir }}"
+      when: not postgres_data.stat.exists
+
+    - name: Start and enable services
+      service: "name={{ item }} state=started enabled=yes"
+      with_items:
+        - postgresql
+
+  handlers:
+    - name: restart postgres
+      service: name=postgresql state=restarted
