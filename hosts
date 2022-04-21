@@ -12,12 +12,18 @@
 localhost
 
 [app]
-192.168.88.56
-192.168.88.74
+192.168.88.56 ansible_user=ansible
+192.168.88.74 ansible_user=ansible
+
+[ubuntu]
+192.168.88.56 ansible_user=ansible
+
+[centos]
+192.168.88.74 ansible_user=ansible
 
 [database]
 localhost
 
 [database:vars]
-version: latest
+version: 14
 data_dir: /var/lib/pgsql/data/
